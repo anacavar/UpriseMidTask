@@ -1,0 +1,6 @@
+@UpriseMidTask_HostAddress = http://localhost:5029
+
+GET {{UpriseMidTask_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
