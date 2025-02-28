@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UpriseMidLevel.Models;
 
-namespace UpriseMidTask.Controllers.Data
+namespace UpriseMidTask.Data
 {
     public class AppDbContext : DbContext
     {

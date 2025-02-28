@@ -1,6 +1,6 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
-using UpriseMidTask.Controllers.Data;
+using UpriseMidTask.Data;
 
 
 var builder = WebApplication.CreateBuilder(args);

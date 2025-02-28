@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using UpriseMidTask.Controllers.Data;
+using UpriseMidTask.Data;
 
 namespace UpriseMidLevel.Controllers
 {
