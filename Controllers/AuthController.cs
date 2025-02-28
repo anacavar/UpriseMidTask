@@ -1,5 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using UpriseMidLevel.Models;
 using UpriseMidTask.Data;
 
 namespace UpriseMidLevel.Controllers
@@ -36,23 +41,58 @@ namespace UpriseMidLevel.Controllers
             }
         }
 
-        //// register
-        //[HttpPost("register")]
-        //public IActionResult Register([FromBody] User user)
-        //{
-        //    // check if user exists
-        //    // hash password
-        //    // save user to db
-        //    // return user
-        //}
-        //// login
-        //[HttpPost("login")]
-        //public IActionResult Login([FromBody] User user)
-        //{
-        //    // check if user exists
-        //    // check if password is correct
-        //    // return JWT
-        //}
-        //// auth using JWT
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] User user)
+        {
+            if (_context.Users.Any(u => u.Email == user.Email))
+            {
+                return BadRequest("User already exists.");
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            _context.Users.Add(user);
+            _context.SaveChanges();
+
+            var token = GenerateJwtToken(user);
+
+            return Ok(new { token });
+        }
+
+       [HttpPost("login")]
+        public IActionResult Login([FromBody] User user)
+        {
+            var dbUser = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+            if (dbUser == null || !BCrypt.Net.BCrypt.Verify(user.Password, dbUser.Password))
+            {
+                return Unauthorized("Invalid credentials.");
+            }
+
+            var token = GenerateJwtToken(dbUser);
+            return Ok(new { token });
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email)
+            };
+
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.UtcNow.AddHours(3),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

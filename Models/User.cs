@@ -1,9 +1,12 @@
-﻿namespace UpriseMidLevel.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UpriseMidLevel.Models
 {
     public class User
     {
-        required public int Id { get; set; } // ide li required svuda?
-        required public string Uuid { get; set; }
+        [Key]
+        public int Id { get; set; } 
+        public string Uuid { get; set; } = Guid.NewGuid().ToString();
         required public string Email { get; set; }
         required public string Password { get; set; } // hashed, salted
     }
