@@ -29,8 +29,8 @@ builder.Services.AddAuthentication()
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
-            ValidAudiences = builder.Configuration.GetSection("Api:ValidAudiences").Get<string[]>(),
-            ValidIssuers = builder.Configuration.GetSection("Api:ValidIssuers").Get<string[]>(),
+            ValidAudience = builder.Configuration["Jwt:Audience"], // Audience as expected
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Issuer as expected
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
 
@@ -49,6 +49,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
