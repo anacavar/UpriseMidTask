@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using UpriseMidLevel.Models;
+using UpriseMidTask.Controllers;
 using UpriseMidTask.Data;
 
 namespace UpriseMidLevel.Controllers
@@ -13,32 +13,15 @@ namespace UpriseMidLevel.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
+        private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
 
-        public AuthController(IConfiguration configuration, AppDbContext context)
+        public AuthController(IConfiguration configuration, AppDbContext context, ILogger<AuthController> logger)
         {
             _configuration = configuration;
             _context = context;
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> TestDatabaseConnection()
-        {
-            try
-            {
-                await _context.Database.OpenConnectionAsync();
-                return Ok("✅ Database connection successful!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error during manual connection: {ex.Message}");
-                return StatusCode(500, $"❌ Error: {ex.Message}");
-            }
-            finally
-            {
-                await _context.Database.CloseConnectionAsync();
-            }
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -54,7 +37,7 @@ namespace UpriseMidLevel.Controllers
             _context.SaveChanges();
 
             var token = GenerateJwtToken(user);
-
+            _logger.LogInformation($"Registering new user with email address {user.Email}");
             return Ok(new { token });
         }
 
@@ -68,6 +51,7 @@ namespace UpriseMidLevel.Controllers
             }
 
             var token = GenerateJwtToken(dbUser);
+            _logger.LogInformation($"Logging in user {dbUser.Email}");
             return Ok(new { token });
         }
 

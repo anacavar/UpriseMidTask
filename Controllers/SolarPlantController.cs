@@ -28,6 +28,7 @@ public class SolarPlantController : ControllerBase
     {
         _context.SolarPlants.Add(plant);
         await _context.SaveChangesAsync();
+        _logger.LogInformation($"Creating a new solar plant {plant.Id}");
         return CreatedAtAction("GetSolarPlant", new { id = plant.Id }, plant);
     }
 
@@ -42,6 +43,7 @@ public class SolarPlantController : ControllerBase
         {
             return NotFound();
         }
+        _logger.LogInformation($"Get solar plant {plant.Id}");
         return Ok(plant);
     }
 
@@ -58,6 +60,7 @@ public class SolarPlantController : ControllerBase
             return NotFound("No solar plants found.");
         }
 
+        _logger.LogInformation($"Getting all solar plants.");
         return Ok(plants);
     }
 
@@ -77,6 +80,7 @@ public class SolarPlantController : ControllerBase
         if (updatedPlant.Longitude != default(double)) plant.Longitude = updatedPlant.Longitude;
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation($"Updating solar plant {plant.Id}");
         return Ok(updatedPlant); 
     }
 
@@ -96,6 +100,7 @@ public class SolarPlantController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation($"Adding production data for solar plant {plant.Id}");
         return Ok(newProductionData);
     }
 
@@ -111,6 +116,7 @@ public class SolarPlantController : ControllerBase
 
         plant.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+        _logger.LogInformation($"Deleting solar plant {plant.Id}");
         return NoContent(); 
     }
 
@@ -163,6 +169,7 @@ public class SolarPlantController : ControllerBase
             })
             .ToList();
 
+        _logger.LogInformation($"Fetching timeseries data for solar plant {plant.Id}");
         return Ok(aggregatedData);
     }
 }
