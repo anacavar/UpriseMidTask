@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UpriseMidTask.Data;
+using UpriseMidTask.DTOs;
 using UpriseMidTask.Models;
 
 namespace UpriseMidTask.Controllers;
@@ -112,5 +112,57 @@ public class SolarPlantController : ControllerBase
         plant.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return NoContent(); 
+    }
+
+    [HttpGet("{id}/get-production-data")]
+    public async Task<ActionResult<IEnumerable<ProductionData>>> GetProductionData(
+    int id,
+    [FromQuery] DateTime startDate,
+    [FromQuery] DateTime endDate,
+    [FromQuery] int granularity = 15,
+    [FromQuery] bool isForecast = false)
+    {
+        var validGranularities = new[] { 15, 60 };
+        if (!validGranularities.Contains(granularity))
+        {
+            return BadRequest("Allowed granularity values: 15 (15 minutes) and 60 (1 hour)");
+        }
+
+        var plant = await _context.SolarPlants
+            .Include(p => p.ProductionData)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (plant == null)
+        {
+            return NotFound("Solar plant not found.");
+        }
+
+        if (plant.ProductionData == null)
+        {
+            return NotFound("No production data for given plant.");
+        }
+
+        var filteredData = plant.ProductionData
+            .Where(d => d.Timestamp >= startDate && d.Timestamp <= endDate)
+            .Where(d => d.IsForecast == isForecast) // Ensure actual/forecasted filtering
+            .OrderBy(d => d.Timestamp)
+            .ToList();
+
+        var aggregatedData = filteredData
+            .GroupBy(d => new
+            {
+                Interval = new TimeSpan(
+                    ((long)(d.Timestamp - startDate).TotalMinutes / granularity) * granularity * 600000000L
+                )
+            })
+            .Select(g => new AggregateProductionData
+            {
+                Timestamp = startDate.AddMinutes(g.Key.Interval.TotalMinutes),
+                TotalProduction = g.Sum(d => d.Production), 
+                AverageProduction = g.Average(d => d.Production)
+            })
+            .ToList();
+
+        return Ok(aggregatedData);
     }
 }
