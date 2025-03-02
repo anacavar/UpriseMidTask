@@ -14,7 +14,16 @@ var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
 Console.WriteLine($"Connection String: {connectionString}");
 Console.WriteLine($"JWT Secret: {jwtSecret}");
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true; // Allows custom validation
+    })
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Ensures correct property names
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));

@@ -7,7 +7,7 @@ namespace UpriseMidTask.Models
         [Key]
         public int Id { get; set; }
         public string Uuid { get; set; } = Guid.NewGuid().ToString();
-        public DateTime DeletedAt { get; set; }
+        public DateTime? DeletedAt { get; set; }
         required public string Name { get; set; }
         public decimal PowerInstalled { get; set; }
         public DateTime DateInstalled { get; set; }
