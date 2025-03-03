@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using UpriseMidTask.Data;
 using UpriseMidTask.DTOs;
 using UpriseMidTask.Models;
@@ -15,16 +16,18 @@ public class SolarPlantController : ControllerBase
     private readonly ILogger<SolarPlantController> _logger;
     private readonly IConfiguration _configuration;
     private readonly AppDbContext _context;
+    private readonly HttpClient _httpClient;
 
-    public SolarPlantController(IConfiguration configuration, AppDbContext context, ILogger<SolarPlantController> logger)
+    public SolarPlantController(IConfiguration configuration, AppDbContext context, ILogger<SolarPlantController> logger, HttpClient httpClient)
     {
         _configuration = configuration;
         _context = context;
         _logger = logger;
+        _httpClient = httpClient;
     }
 
     [HttpPost("create")] 
-    public async Task<ActionResult<SolarPlant>> CreateSolarPowerPlant(SolarPlant plant)
+    public async Task<ActionResult<SolarPlant>> CreateSolarPlant(SolarPlant plant)
     {
         _context.SolarPlants.Add(plant);
         await _context.SaveChangesAsync();
@@ -95,7 +98,7 @@ public class SolarPlantController : ControllerBase
 
         foreach (var data in newProductionData)
         {
-            data.SolarPowerPlantId = id;
+            data.SolarPlantId = id;
             _context.ProductionData.Add(data);
         }
 
@@ -171,5 +174,56 @@ public class SolarPlantController : ControllerBase
 
         _logger.LogInformation($"Fetching timeseries data for solar plant {plant.Id}");
         return Ok(aggregatedData);
+    }
+
+    [HttpGet("{id}/generate-historical-data")]
+    public IActionResult GenerateHistoricalData(int id, DateTime startDate, DateTime endDate)
+    {
+        var historicalData = new List<ProductionData>();
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var random = new Random();
+            var production = (decimal)(random.NextDouble() * 100);
+            historicalData.Add(new ProductionData
+            {
+                SolarPlantId = id,
+                Timestamp = date,
+                Production = production,
+                IsForecast = false,
+            });
+        }
+        return Ok(historicalData);
+    }
+
+    [HttpGet("{id}/forecast-production")]
+    public async Task<IActionResult> ForecastProduction(int id, DateTime forecastDate)
+    {
+        var plant = await _context.SolarPlants.FindAsync(id);
+        if (plant == null)
+        {
+            return NotFound();
+        }
+        var clouds = await FetchWeatherData(plant.Latitude, plant.Longitude, forecastDate);
+        var forecastedProduction = plant.PowerInstalled * (decimal)((100-clouds)/100); // clouds; kako ide ova računica?
+        Console.WriteLine(forecastedProduction);
+        var forecastData = new ProductionData
+        {
+            SolarPlantId = id,
+            Timestamp = forecastDate,
+            Production = forecastedProduction,
+            IsForecast = true
+        };
+        return Ok(forecastData);
+    }
+
+    private async Task<decimal> FetchWeatherData(double latitude, double longitude, DateTime date)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("MY_API_KEY");
+        var timestamp = ((DateTimeOffset)date).ToUnixTimeSeconds();
+        var url = $"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={apiKey}&units=metric\r\n"; // this one
+        var response = await _httpClient.GetStringAsync(url);
+        var json = JObject.Parse(response);
+        var clouds = json["clouds"]["all"].Value<int>();
+        return clouds;
     }
 }

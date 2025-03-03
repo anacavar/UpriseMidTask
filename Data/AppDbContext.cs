@@ -29,7 +29,7 @@ namespace UpriseMidTask.Data
             modelBuilder.Entity<ProductionData>()
                 .HasOne(p => p.SolarPlant)          // One ProductionData has one SolarPowerPlant
                 .WithMany(s => s.ProductionData)        // One SolarPowerPlant has many ProductionData
-                .HasForeignKey(p => p.SolarPowerPlantId); // ProductionData has a foreign key to SolarPowerPlantId
+                .HasForeignKey(p => p.SolarPlantId); // ProductionData has a foreign key to SolarPowerPlantId
         }
 
     }

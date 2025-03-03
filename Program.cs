@@ -20,6 +20,10 @@ try
 
     var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
     var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+    var apiKey = Environment.GetEnvironmentVariable("MY_API_KEY");
+    Console.WriteLine(connectionString);
+    Console.WriteLine(jwtSecret);
+    Console.WriteLine(apiKey);
 
     builder.Services.AddControllers()
         .ConfigureApiBehaviorOptions(options =>
@@ -34,6 +38,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+    builder.Services.AddHttpClient();
 
     builder.Services.AddAuthentication()
         .AddJwtBearer("some-scheme", jwtOptions =>
